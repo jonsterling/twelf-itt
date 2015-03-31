@@ -1,0 +1,9 @@
+sort : type.
+%name sort S T.
+
+hyp : sort.
+val : sort.
+use : sort.
+can : sort.
+neu : sort.
+exp : sort.

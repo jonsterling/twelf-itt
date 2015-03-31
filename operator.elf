@@ -1,0 +1,6 @@
+operator : arity -> sort -> type.
+
+op/hyp : operator (@0 , □ hyp) neu.
+op/use : operator (@0 , □ use , □ neu) neu.
+op/val : operator (@0 , □ val) exp.
+op/neu : operator (@0 , □ neu) exp.

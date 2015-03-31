@@ -1,0 +1,6 @@
+op/lam : operator (@0 , s z • exp) val.
+%abbrev λ = [f] op/lam $ <> ; Λ f.
+
+op/ap : operator (@0 , □ exp) use.
+
+test = λ [x] ↓ ` x.

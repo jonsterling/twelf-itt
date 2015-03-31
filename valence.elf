@@ -1,0 +1,7 @@
+% a valence is a list of bindings and a sort
+valence : type.
+• : nat -> sort -> valence.
+%infix right 9 •.
+
+%abbrev □ = [x] z • x.
+%prefix 10 □.

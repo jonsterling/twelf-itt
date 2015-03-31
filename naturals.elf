@@ -1,0 +1,4 @@
+% the natural numbers
+nat : type.
+z : nat.
+s : nat -> nat.
