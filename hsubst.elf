@@ -1,0 +1,71 @@
+%block hyp-block : block {x:abt z hyp}.
+
+happ : abt z use -> abt z val -> abt z exp -> type.
+%mode happ +X1 +X2 -X3.
+
+hsubst-val : abt z exp -> (abt z hyp -> abt I val) -> abt I val -> type.
+%mode hsubst-val +X1 +X2 -X3.
+
+hsubst-use : abt z exp -> (abt z hyp -> abt I use) -> abt I use -> type.
+%mode hsubst-use +X1 +X2 -X3.
+
+hsubst-neu : abt z exp -> (abt z hyp -> abt z neu) -> abt z neu -> type.
+%mode hsubst-neu +X1 +X2 -X3.
+
+hsubst-neu-exp : abt z exp -> (abt z hyp -> abt z neu) -> abt z exp -> type.
+%mode hsubst-neu-exp +X1 +X2 -X3.
+
+hsubst-exp : abt z exp -> (abt z hyp -> abt I exp) -> abt I exp -> type.
+%mode hsubst-exp +X1 +X2 -X3.
+
+hsubst-exp* : abt z exp -> (abt z hyp -> abt* X) -> abt* X -> type.
+%mode hsubst-exp* +X1 +X2 -X3.
+
+hsubst-exp*/<> : hsubst-exp* E0 ([x] <>) <>.
+hsubst-exp*/; : hsubst-exp* E0 ([x] (XS x) ; (X x)) (XS' ; X')
+                 <- hsubst-exp* E0 XS XS'
+                 <- hsubst-exp E0 X X'.
+
+hsubst-val/Λ : hsubst-val E0 ([x] Λ [y] X x y) (Λ X')
+                <- {y} hsubst-val E0 ([x] X x y) (X' y).
+hsubst-val/$ : hsubst-val E0 ([x] O $ (XS x)) (O $ XS')
+                <- hsubst-exp* E0 XS XS'.
+
+hsubst-use/Λ : hsubst-use E0 ([x] Λ [y] X x y) (Λ X')
+                <- {y} hsubst-use E0 ([x] X x y) (X' y).
+hsubst-use/$ : hsubst-use E0 ([x] O $ (XS x)) (O $ XS')
+                <- hsubst-exp* E0 XS XS'.
+
+hsubst-neu/@ : hsubst-neu E0 ([x] (U x) @ (R x)) (U' @ R')
+                <- hsubst-neu E0 R R'
+                <- hsubst-use E0 U U'.
+
+hsubst-neu-exp/` : hsubst-neu-exp E0 ([x] ` x) E0.
+hsubst-neu-exp/@ : hsubst-neu-exp E0 ([x] (U x) @ (R x)) U♢R
+                    <- hsubst-neu-exp E0 R (↑ M)
+                    <- hsubst-use E0 U U'
+                    <- happ U' M U♢R.
+
+hsubst-exp/Λ : hsubst-exp E0 ([x] Λ [y] X x y) (Λ X')
+                <- {y} hsubst-exp E0 ([x] X x y) (X' y).
+hsubst-exp/↑ : hsubst-exp E0 ([x] ↑ (M x)) (↑ M')
+                <- hsubst-val E0 M M'.
+hsubst-exp/↓/neu : hsubst-exp E0 ([x] ↓ (R x)) (↓ R')
+                    <- hsubst-neu E0 R R'.
+hsubst-exp/↓/exp : hsubst-exp E0 ([x] ↓ (R x)) E
+                    <- hsubst-neu-exp E0 R E.
+
+happ/spread : happ (op/spread $ <> ; Λ [x] Λ [y] E x y) (op/pair $ <> ; X ; Y) E''
+               <- hsubst-exp X ([x] Λ [y] E x y) (Λ E')
+               <- hsubst-exp Y E' E''.
+
+happ/ap : happ (op/ap $ <> ; E) (op/lam $ <> ; Λ F) FE
+           <- hsubst-exp E F FE.
+
+happ/decide/inl : happ (op/decide $ <> ; Λ L ; Λ R) (op/inl $ <> ; X) LX
+                   <- hsubst-exp X L LX.
+happ/decide/inr : happ (op/decide $ <> ; Λ L ; Λ R) (op/inr $ <> ; X) RX
+                   <- hsubst-exp X R RX.
+
+%worlds (hyp-block) (hsubst-val _ _ _) (hsubst-use _ _ _) (hsubst-neu _ _ _) (hsubst-neu-exp _ _ _) (hsubst-exp _ _ _) (hsubst-exp* _ _ _) (happ _ _ _).
+% %terminates (M U R R' E E* U') (hsubst-val _ M _) (hsubst-use _ U _) (hsubst-neu _ R _) (hsubst-neu-exp _ R' _) (hsubst-exp _ E _) (hsubst-exp* _ E* _) (happ U' _ _).

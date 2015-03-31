@@ -1,23 +1,24 @@
-abt : valence -> type.
+abt : nat -> sort -> type.
 abt* : arity -> type.
 
 <> : abt* @0.
-; : abt* X -> abt V -> abt* (X , V).
+; : abt* X -> abt I exp -> abt* (X , I).
 %infix left 8 ;.
 
-$ : operator X S -> abt* X -> abt (□ S).
+$ : operator X S -> abt* X -> abt z S.
 %infix left 0 $.
 
-Λ : (abt (□ hyp) -> abt (N • S)) -> abt (s N • S).
+Λ : (abt z hyp -> abt I S) -> abt (s I) S.
+%prefix 9 Λ.
 
-%abbrev ` = [x] op/hyp $ <> ; x.
+` : abt z hyp -> abt z neu.
 %prefix 9 `.
 
-%abbrev ↑ = [x] op/val $ <> ; x.
-%prefix 7 ↑.
+@ : abt z use -> abt z neu -> abt z neu.
+%infix right 7 @.
 
-%abbrev ↓ = [x] op/neu $ <> ; x.
+↓ : abt z neu -> abt z exp.
 %prefix 7 ↓.
 
-%abbrev @ = [x] [y] op/use $ <> ; x ; y.
-%infix right 7 @.
+↑ : abt z val -> abt z exp.
+%prefix 7 ↑.

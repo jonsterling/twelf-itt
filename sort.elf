@@ -4,6 +4,5 @@ sort : type.
 hyp : sort.
 val : sort.
 use : sort.
-can : sort.
 neu : sort.
 exp : sort.

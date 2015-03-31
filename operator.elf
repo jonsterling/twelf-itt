@@ -1,6 +1,13 @@
 operator : arity -> sort -> type.
 
-op/hyp : operator (@0 , □ hyp) neu.
-op/use : operator (@0 , □ use , □ neu) neu.
-op/val : operator (@0 , □ val) exp.
-op/neu : operator (@0 , □ neu) exp.
+op/ax : operator @0 val.
+
+op/pair : operator (@0 , z , z) val.
+op/spread : operator (@0 , s (s z)) use.
+
+op/lam : operator (@0 , s z) val.
+op/ap : operator (@0 , z) use.
+
+op/inl : operator (@0 , z) val.
+op/inr : operator (@0 , z) val.
+op/decide : operator (@0 , s z , s z) use.

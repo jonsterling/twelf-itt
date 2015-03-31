@@ -1,5 +1,5 @@
 % an arity is a list of valences
 arity : type.
 @0 : arity.
-, : arity -> valence -> arity.
+, : arity -> nat -> arity.
 %infix left 8 ,.
