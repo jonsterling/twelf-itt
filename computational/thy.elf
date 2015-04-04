@@ -51,8 +51,22 @@ uses : use -> val -> (hyp -> exp) -> type.
 <= : exp -> exp -> type. %infix left 8 <=.
 %mode <= +E +A.
 
+eq-val : val -> val -> type.
+%mode eq-val +M +N.
+
+eq-use : use -> use -> type.
+%mode eq-use +U +V.
+
+eq-neu : neu -> neu -> type.
+%mode eq-neu +S +T.
+
+eq-exp : exp -> exp -> type.
+%mode eq-exp +E1 +E2.
 
 %%% JUDGEMENTS FOR ANY TERMS
+
+eq-exp* : exp -> exp -> type.
+%mode eq-exp* +E1 +E2.
 
 %% E <=* A means "E is an expression of type A"
 <=* : exp -> exp -> type. %infix left 8 <=*.
@@ -71,7 +85,8 @@ uses : use -> val -> (hyp -> exp) -> type.
 <=/↑ : ↑ M <= ↑ A
           <- M <=₀ A.
 <=/↓ : ↓ R <= A
-        <- R =>* A.
+        <- R =>* A'
+        <- eq-exp* A A'.
 
 
 %%% HEREDITARY SUBSTITUTIONS 
@@ -162,6 +177,44 @@ whnf/let : whnf (let E F) X'
             <- hsubst-exp E F X
             <- whnf X X'.
 
+
+eq-val/unit : eq-val unit unit.
+eq-val/ax : eq-val ax ax.
+
+eq-val/prod : eq-val (prod A B) (prod A' B')
+               <- eq-exp* A A'
+               <- {x} eq-exp* (B x) (B' x).
+eq-val/pair : eq-val (pair M N) (pair M' N')
+               <- eq-exp* M M'
+               <- eq-exp* N N'.
+
+eq-val/fun : eq-val (fun A B) (fun A' B')
+              <- eq-exp* A A'
+              <- eq-exp* B B'.
+eq-val/lam : eq-val (lam E) (lam E')
+              <- {x} eq-exp* (E x) (E' x).
+
+eq-use/fst : eq-use fst fst.
+eq-use/snd : eq-use snd snd.
+eq-use/ap : eq-use (ap E) (ap E')
+             <- eq-exp* E E'.
+
+eq-neu/` : eq-neu (` H) (` H).
+eq-neu/@ : eq-neu (U @ R) (U' @ R')
+            <- eq-use U U'
+            <- eq-neu R R'.
+
+eq-exp/↑ : eq-exp (↑ M) (↑ N)
+            <- eq-val M N.
+eq-exp/↓ : eq-exp (↓ R) (↓ S)
+            <- eq-neu R S.
+
+eq-exp*/whnf : eq-exp* E1 E2
+                <- whnf E1 E1'
+                <- whnf E2 E2'
+                <- eq-exp E1' E2'.
+
+
 %%% These are the primary typing checking & type synthesis
 %%% judgements. The meaning of <=* is very similar to the meaning of ∈
 %%% in extensional type theory: whereas in ETT, we whnfuate M to a
@@ -184,3 +237,8 @@ whnf/let : whnf (let E F) X'
 %solve - : (let (↑ ax) [x] ↓ ` x) <=* ↑ unit.
 %solve - : (↑ lam [x] ↓ ` x) <=* ↑ fun (↑ unit) (↑ unit).
 %solve - : (ap (↑ ax) ⋄ ↑ lam [x] ↓ ` x) <=* ↑ unit.
+
+%abbrev ID = lam [x] ↓ ` x.
+
+%solve - : ↑ ID <=* ↑ fun (↑ unit) (↑ unit).
+%solve - : eq-exp (↑ (lam [x] ap (↓ ` x) ⋄ ↑ ID)) (↑ ID).
