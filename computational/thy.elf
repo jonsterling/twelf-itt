@@ -28,7 +28,7 @@ let : exp -> (hyp -> exp) -> exp.
 happ : use -> val -> exp -> type.
 %mode happ +U +M -E.
 
-uses : use -> val -> exp -> type.
+uses : use -> val -> (hyp -> exp) -> type.
 %mode uses +U +A -B.
 
 %%% JUDGEMENTS FOR HYPOTHESES
@@ -64,7 +64,7 @@ uses : use -> val -> exp -> type.
 
 =>/@ : U @ R => A'
         <- R =>* ↑ A
-        <- uses U A A'.
+        <- uses U A ([x] A').
 =>/hyp : ` H => A
           <- H =>₀ A.
 
@@ -181,14 +181,14 @@ chk/pair : pair M N <=₀ prod A B
             <- M <=* A
             <- N <=* B.
 
-uses/fst : uses fst (prod A B) A.
-uses/snd : uses snd (prod A B) B.
+uses/fst : uses fst (prod A B) ([x] A).
+uses/snd : uses snd (prod A B) ([x] B).
 happ/fst : happ fst (pair M N) M.
 happ/snd : happ snd (pair M N) N.
 
 chk/lam : lam E <=₀ fun A B
            <- {x} x =>₀ A -> E x <=* B.
-uses/ap : uses (ap E) (prod A B) B
+uses/ap : uses (ap E) (prod A B) ([x] B)
            <- E <=* A.
 happ/ap : happ (ap E) (lam F) F'
            <- hsubst-exp E F F'.
