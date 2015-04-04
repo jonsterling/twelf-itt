@@ -142,7 +142,7 @@ hsubst/let : hsubst-exp E0 ([x] let (E x) ([y] F x y)) (let E' F')
               <- hsubst-exp E0 E E'
               <- {y} hsubst-exp E0 ([x] F x y) (F' y).
 
-%%% We evalorate expressions to normal forms by replacing let bindings
+%%% We evaluate expressions to normal forms by replacing let bindings
 %%% by (hereditary) substitutions.
 eval-val : val -> val -> type.
 %mode eval-val +M -N.
