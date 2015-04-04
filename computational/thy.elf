@@ -255,3 +255,5 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 %solve - : eval-val (pair (↑ ax) (fst ⋄ ↑ pair (↑ ax) (↑ ax))) E.
 
 %solve - : (↑ pair (↑ ax) (snd ⋄ ↑ pair (↑ ax) (↑ ax))) <=* ↑ prod (↑ unit) (↑ unit).
+
+%solve - : (fst ⋄ ↑ pair (↑ ax) (↑ ax)) <=* ↑ unit.
