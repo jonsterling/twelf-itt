@@ -31,21 +31,34 @@ happ : use -> val -> exp -> type.
 uses : use -> val -> exp -> type.
 %mode uses +U +A -B.
 
+%%% JUDGEMENTS FOR HYPOTHESES
+
+%% x =>₀ A means "x is a hypothesis of type A"
 =>₀ : hyp -> exp -> type. %infix left 9 =>₀.
 %mode =>₀ +H -A.
 
+%%% JUDGEMENTS FOR NORMAL FORMS
+
+%% R => A means "R is a normal neutral term of type A"
 => : neu -> exp -> type. %infix left 9 =>.
 %mode => +R -A.
 
+%% M <=₀ A means "M is a normal value of type A"
 <=₀ : val -> val -> type. %infix left 8 <=₀.
 %mode <=₀ +M +A.
 
+%% E <= A means "E is a normal expression of type A"
 <= : exp -> exp -> type. %infix left 8 <=.
 %mode <= +E +A.
 
+
+%%% JUDGEMENTS FOR ANY TERMS
+
+%% E <=* A means "E is an expression of type A"
 <=* : exp -> exp -> type. %infix left 8 <=*.
 %mode <=* +E +A.
 
+%% R =>* A means "R is a neutral term of type A"
 =>* : neu -> exp -> type. %infix left 8 =>*.
 %mode =>* +R -A.
 
