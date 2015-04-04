@@ -128,11 +128,19 @@ hsubst/pair : hsubst-val E0 ([x] pair (M x) (N x)) (pair M' N')
                <- hsubst-exp E0 M M'
                <- hsubst-exp E0 N N'.
 
-hsubst/ax : hsubst-val E0 ([x] unit) unit.
-hsubst/ax : hsubst-val E0 ([x] ax) ax.
-
 hsubst/fst : hsubst-use E0 ([x] fst) fst.
 hsubst/snd : hsubst-use E0 ([x] snd) snd.
+
+hsubst/unit : hsubst-val E0 ([x] unit) unit.
+hsubst/ax : hsubst-val E0 ([x] ax) ax.
+
+hsubst/fun : hsubst-val E0 ([x] fun (A x) (B x)) (fun A' B')
+              <- hsubst-exp E0 A A'
+              <- hsubst-exp E0 B B'.
+hsubst/lam : hsubst-val E0 ([x] lam ([y] E x y)) (lam E')
+              <- {y} hsubst-exp E0 ([x] E x y) (E' y).
+hsubst/ap : hsubst-use E0 ([x] ap (E x)) (ap E')
+             <- hsubst-exp E0 E E'.
 
 hsubst/closed : hsubst-neu E0 ([x] R) R.
 hsubst/@ : hsubst-neu E0 ([x] (U x) @ (R x)) (U' @ R')
@@ -294,3 +302,4 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 %solve - : (let (↑ ax) [x] ↓ ` x) <=* ↑ unit.
 
 %solve - : (↑ lam [x] ↓ ` x) <=* ↑ fun (↑ unit) (↑ unit).
+%solve - : (ap (↑ ax) ⋄ ↑ lam [x] ↓ ` x) <=* ↑ unit.
