@@ -14,7 +14,7 @@ hyp : type.
 unit : val.
 ax : val.
 
-prod : exp -> exp -> val.
+prod : exp -> (hyp -> exp) -> val.
 pair : exp -> exp -> val.
 fst : use.
 snd : use.
@@ -92,7 +92,7 @@ normal/ax : normal-val ax.
 
 normal/prod : normal-val (prod A B)
                <- normal-exp A
-               <- normal-exp B.
+               <- {x} normal-exp (B x).
 normal/pair : normal-val (pair M N)
                <- normal-exp M
                <- normal-exp N.
@@ -134,9 +134,9 @@ hsubst-neu-exp : exp -> (hyp -> neu) -> exp -> type.
 hsubst-exp : exp -> (hyp -> exp) -> exp -> type.
 %mode hsubst-exp +E +F -E'.
 
-hsubst/prod : hsubst-val E0 ([x] prod (A x) (B x)) (prod A' B')
+hsubst/prod : hsubst-val E0 ([x] prod (A x) ([y] B x y)) (prod A' B')
                <- hsubst-exp E0 A A'
-               <- hsubst-exp E0 B B'.
+               <- {y} hsubst-exp E0 ([x] B x y) (B' y).
 hsubst/pair : hsubst-val E0 ([x] pair (M x) (N x)) (pair M' N')
                <- hsubst-exp E0 M M'
                <- hsubst-exp E0 N N'.
@@ -178,17 +178,19 @@ hsubst/let : hsubst-exp E0 ([x] let (E x) ([y] F x y)) (let E' F')
 
 chk/ax : ax <=₀ unit.
 chk/pair : pair M N <=₀ prod A B
+            <- hsubst-exp M B B'
             <- M <=* A
-            <- N <=* B.
+            <- N <=* B'.
 
 uses/fst : uses fst (prod A B) ([x] A).
-uses/snd : uses snd (prod A B) ([x] B).
+uses/snd : uses snd (prod A B) B'
+            <- {x} hsubst-exp (↓ (fst @ ` x)) B (B' x).
 happ/fst : happ fst (pair M N) M.
 happ/snd : happ snd (pair M N) N.
 
 chk/lam : lam E <=₀ fun A B
            <- {x} x =>₀ A -> E x <=* B.
-uses/ap : uses (ap E) (prod A B) ([x] B)
+uses/ap : uses (ap E) (fun A B) ([x] B)
            <- E <=* A.
 happ/ap : happ (ap E) (lam F) F'
            <- hsubst-exp E F F'.
@@ -212,7 +214,7 @@ eval/ax : eval-val ax ax.
 
 eval/prod : eval-val (prod A B) (prod A' B')
              <- eval-exp A A'
-             <- eval-exp B B'.
+             <- {x} eval-exp (B x) (B' x).
 eval/pair : eval-val (pair M N) (pair M' N')
              <- eval-exp M M'
              <- eval-exp N N'.
@@ -273,7 +275,7 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 - : eval-normal-val eval/unit normal/unit.
 - : eval-normal-val eval/ax normal/ax.
 - : eval-normal-val (eval/prod X Y) (normal/prod X' Y')
-     <- eval-normal-exp X X'
+     <- ({x} eval-normal-exp (X x) (X' x))
      <- eval-normal-exp Y Y'.
 - : eval-normal-val (eval/pair X Y) (normal/pair X' Y')
      <- eval-normal-exp X X'
@@ -310,7 +312,7 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 %abbrev ⋄ = [U] [X] let X ([x] ↓ (U @ ` x)). %infix left 0 ⋄.
 
 %solve - : eval-val (pair (↑ ax) (fst ⋄ ↑ pair (↑ ax) (↑ ax))) E.
-%solve - : (↑ pair (↑ ax) (snd ⋄ ↑ pair (↑ ax) (↑ ax))) <=* ↑ prod (↑ unit) (↑ unit).
+%solve - : (↑ pair (↑ ax) (snd ⋄ ↑ pair (↑ ax) (↑ ax))) <=* ↑ prod (↑ unit) ([x] ↑ unit).
 %solve - : (fst ⋄ ↑ pair (↑ ax) (↑ ax)) <=* ↑ unit.
 %solve - : (let (↑ ax) [x] ↓ ` x) <=* ↑ unit.
 
