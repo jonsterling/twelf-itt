@@ -54,7 +54,7 @@ uses : use -> tp -> tp -> type.
 <=/↑ : ↑ M <= A
           <- M <=₀ A.
 <=/↓ : ↓ R <= A
-        <- R => A.
+        <- R =>* A.
 
 chk/ax : ax <=₀ unit.
 chk/pair : pair M N <=₀ prod A B
