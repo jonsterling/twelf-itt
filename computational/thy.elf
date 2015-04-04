@@ -4,19 +4,24 @@ neu : type.
 exp : type.
 hyp : type.
 
+%block hyp-b : block {x:hyp}.
+
 ` : hyp -> neu. %prefix 11 `.
 @ : use -> neu -> neu. %infix right 10 @.
 ↓ : neu -> exp. %prefix 10 ↓.
 ↑ : val -> exp. %prefix 10 ↑.
 
 unit : val.
-prod : exp -> exp -> val.
-
 ax : val.
-pair : exp -> exp -> val.
 
+prod : exp -> exp -> val.
+pair : exp -> exp -> val.
 fst : use.
 snd : use.
+
+fun : exp -> exp -> val.
+lam : (hyp -> exp) -> val.
+ap : exp -> use.
 
 let : exp -> (hyp -> exp) -> exp.
 
@@ -44,7 +49,7 @@ uses : use -> val -> exp -> type.
 =>* : neu -> exp -> type. %infix left 8 =>*.
 %mode =>* +R -A.
 
-=>/@ : (U @ R) => A'
+=>/@ : U @ R => A'
         <- R =>* ↑ A
         <- uses U A A'.
 =>/hyp : ` H => A
@@ -55,15 +60,6 @@ uses : use -> val -> exp -> type.
 <=/↓ : ↓ R <= A
         <- R =>* A.
 
-chk/ax : ax <=₀ unit.
-chk/pair : pair M N <=₀ prod A B
-            <- M <=* A
-            <- N <=* B.
-
-uses/fst : uses fst (prod A B) A.
-uses/snd : uses snd (prod A B) B.
-happ/fst : happ fst (pair M N) M.
-happ/snd : happ snd (pair M N) N.
 
 %%% A PREDICATE FOR NORMAL FORMS (basically, absence of let bindings)
 normal-exp : exp -> type.
@@ -87,9 +83,16 @@ normal/prod : normal-val (prod A B)
 normal/pair : normal-val (pair M N)
                <- normal-exp M
                <- normal-exp N.
+normal/fun : normal-val (fun A B)
+               <- normal-exp A
+               <- normal-exp B.
+normal/lam : normal-val (lam E)
+              <- {x} normal-exp (E x).
 
 normal/fst : normal-use fst.
 normal/snd : normal-use snd.
+normal/ap : normal-use (ap E)
+             <- normal-exp E.
 
 normal/` : normal-neu (` H).
 normal/@ : normal-neu (U @ R)
@@ -152,6 +155,23 @@ hsubst/let : hsubst-exp E0 ([x] let (E x) ([y] F x y)) (let E' F')
               <- hsubst-exp E0 E E'
               <- {y} hsubst-exp E0 ([x] F x y) (F' y).
 
+chk/ax : ax <=₀ unit.
+chk/pair : pair M N <=₀ prod A B
+            <- M <=* A
+            <- N <=* B.
+
+uses/fst : uses fst (prod A B) A.
+uses/snd : uses snd (prod A B) B.
+happ/fst : happ fst (pair M N) M.
+happ/snd : happ snd (pair M N) N.
+
+chk/lam : lam E <=₀ fun A B
+           <- {x} x =>₀ A -> E x <=* B.
+uses/ap : uses (ap E) (prod A B) B
+           <- E <=* A.
+happ/ap : happ (ap E) (lam F) F'
+           <- hsubst-exp E F F'.
+
 %%% We evaluate expressions to normal forms by replacing let bindings
 %%% by (hereditary) substitutions.
 eval-val : val -> val -> type.
@@ -178,6 +198,14 @@ eval/pair : eval-val (pair M N) (pair M' N')
 
 eval/fst : eval-use fst fst.
 eval/snd : eval-use snd snd.
+
+eval/fun : eval-val (fun A B) (fun A' B')
+            <- eval-exp A A'
+            <- eval-exp B B'.
+eval/lam : eval-val (lam E) (lam E')
+            <- {x} eval-exp (E x) (E' x).
+eval/ap : eval-use (ap E) (ap E')
+           <- eval-exp E E'.
 
 eval/` : eval-neu (` H) (` H).
 eval/@ : eval-neu (U @ R) (U' @ R')
@@ -230,8 +258,16 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
      <- eval-normal-exp X X'
      <- eval-normal-exp Y Y'.
 
+- : eval-normal-val (eval/fun X Y) (normal/fun X' Y')
+     <- eval-normal-exp X X'
+     <- eval-normal-exp Y Y'.
+- : eval-normal-val (eval/lam X) (normal/lam X')
+     <- {x} eval-normal-exp (X x) (X' x).
+
 - : eval-normal-use eval/fst normal/fst.
 - : eval-normal-use eval/snd normal/snd.
+- : eval-normal-use (eval/ap X) (normal/ap X')
+     <- eval-normal-exp X X'.
 
 - : eval-normal-neu eval/` normal/`.
 - : eval-normal-neu (eval/@ X Y) (normal/@ X' Y')
@@ -246,14 +282,15 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 - : eval-normal-exp (eval/let X Y) X'
      <- eval-normal-exp X X'.
 
-%worlds () (eval-normal-val _ _) (eval-normal-use _ _) (eval-normal-neu _ _) (eval-normal-exp _ _).
+%worlds (hyp-b) (eval-normal-val _ _) (eval-normal-use _ _) (eval-normal-neu _ _) (eval-normal-exp _ _).
 %total (X1 X2 X3 X4) (eval-normal-val X1 _) (eval-normal-use X2 _) (eval-normal-neu X3 _) (eval-normal-exp X4 _).
 
 
 %abbrev ⋄ = [U] [X] let X ([x] ↓ (U @ ` x)). %infix left 0 ⋄.
 
 %solve - : eval-val (pair (↑ ax) (fst ⋄ ↑ pair (↑ ax) (↑ ax))) E.
-
 %solve - : (↑ pair (↑ ax) (snd ⋄ ↑ pair (↑ ax) (↑ ax))) <=* ↑ prod (↑ unit) (↑ unit).
-
 %solve - : (fst ⋄ ↑ pair (↑ ax) (↑ ax)) <=* ↑ unit.
+%solve - : (let (↑ ax) [x] ↓ ` x) <=* ↑ unit.
+
+%solve - : (↑ lam [x] ↓ ` x) <=* ↑ fun (↑ unit) (↑ unit).
