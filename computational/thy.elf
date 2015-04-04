@@ -74,50 +74,6 @@ uses : use -> val -> (hyp -> exp) -> type.
         <- R =>* A.
 
 
-%%% A PREDICATE FOR NORMAL FORMS (basically, absence of let bindings)
-normal-exp : exp -> type.
-%mode normal-exp +E.
-
-normal-val : val -> type.
-%mode normal-val +M.
-
-normal-use : use -> type.
-%mode normal-use +U.
-
-normal-neu : neu -> type.
-%mode normal-neu +R.
-
-normal/unit : normal-val unit.
-normal/ax : normal-val ax.
-
-normal/prod : normal-val (prod A B)
-               <- normal-exp A
-               <- {x} normal-exp (B x).
-normal/pair : normal-val (pair M N)
-               <- normal-exp M
-               <- normal-exp N.
-normal/fun : normal-val (fun A B)
-               <- normal-exp A
-               <- normal-exp B.
-normal/lam : normal-val (lam E)
-              <- {x} normal-exp (E x).
-
-normal/fst : normal-use fst.
-normal/snd : normal-use snd.
-normal/ap : normal-use (ap E)
-             <- normal-exp E.
-
-normal/` : normal-neu (` H).
-normal/@ : normal-neu (U @ R)
-            <- normal-neu R
-            <- normal-use U.
-
-normal/↓ : normal-exp (↓ R)
-            <- normal-neu R.
-normal/↑ : normal-exp (↑ M)
-            <- normal-val M.
-
-
 %%% HEREDITARY SUBSTITUTIONS 
 hsubst-val : exp -> (hyp -> val) -> val -> type.
 %mode hsubst-val +E +M -N.
@@ -195,126 +151,36 @@ uses/ap : uses (ap E) (fun A B) ([x] B)
 happ/ap : happ (ap E) (lam F) F'
            <- hsubst-exp E F F'.
 
-%%% We evaluate expressions to normal forms by replacing let bindings
+%%% We reduce expressions to weak head normal forms by replacing let bindings
 %%% by (hereditary) substitutions.
-eval-val : val -> val -> type.
-%mode eval-val +M -N.
+whnf : exp -> exp -> type.
+%mode whnf +E1 -E2.
 
-eval-use : use -> use -> type.
-%mode eval-use +U -V.
-
-eval-neu : neu -> neu -> type.
-%mode eval-neu +R -S.
-
-eval-exp : exp -> exp -> type.
-%mode eval-exp +E1 -E2.
-
-eval/unit : eval-val unit unit.
-eval/ax : eval-val ax ax.
-
-eval/prod : eval-val (prod A B) (prod A' B')
-             <- eval-exp A A'
-             <- {x} eval-exp (B x) (B' x).
-eval/pair : eval-val (pair M N) (pair M' N')
-             <- eval-exp M M'
-             <- eval-exp N N'.
-
-eval/fst : eval-use fst fst.
-eval/snd : eval-use snd snd.
-
-eval/fun : eval-val (fun A B) (fun A' B')
-            <- eval-exp A A'
-            <- eval-exp B B'.
-eval/lam : eval-val (lam E) (lam E')
-            <- {x} eval-exp (E x) (E' x).
-eval/ap : eval-use (ap E) (ap E')
-           <- eval-exp E E'.
-
-eval/` : eval-neu (` H) (` H).
-eval/@ : eval-neu (U @ R) (U' @ R')
-          <- eval-neu R R'
-          <- eval-use U U'.
-
-eval/↓ : eval-exp (↓ R) (↓ S)
-          <- eval-neu R S.
-eval/↑ : eval-exp (↑ M) (↑ N)
-          <- eval-val M N.
-eval/let : eval-exp (let E F) X'
+whnf/↓ : whnf (↓ R) (↓ R).
+whnf/↑ : whnf (↑ M) (↑ M).
+whnf/let : whnf (let E F) X'
             <- hsubst-exp E F X
-            <- eval-exp X X'.
+            <- whnf X X'.
 
 %%% These are the primary typing checking & type synthesis
 %%% judgements. The meaning of <=* is very similar to the meaning of ∈
-%%% in extensional type theory: whereas in ETT, we evaluate M to a
+%%% in extensional type theory: whereas in ETT, we whnfuate M to a
 %%% canonical form and then check if it is a verification of A, in ITT
 %%% we evaluate M to a normal form and see if it is a verification of
 %%% A.
 
-<=*/eval : E <=* A
-            <- eval-exp E E'
-            <- eval-exp A A'
+<=*/whnf : E <=* A
+            <- whnf E E'
+            <- whnf A A'
             <- E' <= A'.
-=>*/eval : R =>* A'
-            <- eval-neu R S
-            <- S => A
-            <- eval-exp A A'.
-
-%%% METATHROEM: the evaluation of an expression is always a normal form.
-eval-normal-val : eval-val M N -> normal-val N -> type.
-%mode eval-normal-val +X -Y.
-
-eval-normal-use : eval-use U V -> normal-use V -> type.
-%mode eval-normal-use +X -Y.
-
-eval-normal-neu : eval-neu R S -> normal-neu S -> type.
-%mode eval-normal-neu +X -Y.
-
-eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
-%mode eval-normal-exp +X -Y.
-
-- : eval-normal-val eval/unit normal/unit.
-- : eval-normal-val eval/ax normal/ax.
-- : eval-normal-val (eval/prod X Y) (normal/prod X' Y')
-     <- ({x} eval-normal-exp (X x) (X' x))
-     <- eval-normal-exp Y Y'.
-- : eval-normal-val (eval/pair X Y) (normal/pair X' Y')
-     <- eval-normal-exp X X'
-     <- eval-normal-exp Y Y'.
-
-- : eval-normal-val (eval/fun X Y) (normal/fun X' Y')
-     <- eval-normal-exp X X'
-     <- eval-normal-exp Y Y'.
-- : eval-normal-val (eval/lam X) (normal/lam X')
-     <- {x} eval-normal-exp (X x) (X' x).
-
-- : eval-normal-use eval/fst normal/fst.
-- : eval-normal-use eval/snd normal/snd.
-- : eval-normal-use (eval/ap X) (normal/ap X')
-     <- eval-normal-exp X X'.
-
-- : eval-normal-neu eval/` normal/`.
-- : eval-normal-neu (eval/@ X Y) (normal/@ X' Y')
-     <- eval-normal-use X X'
-     <- eval-normal-neu Y Y'.
-
-- : eval-normal-exp (eval/↓ X) (normal/↓ X')
-     <- eval-normal-neu X X'.
-- : eval-normal-exp (eval/↑ X) (normal/↑ X')
-     <- eval-normal-val X X'.
-
-- : eval-normal-exp (eval/let X Y) X'
-     <- eval-normal-exp X X'.
-
-%worlds (hyp-b) (eval-normal-val _ _) (eval-normal-use _ _) (eval-normal-neu _ _) (eval-normal-exp _ _).
-%total (X1 X2 X3 X4) (eval-normal-val X1 _) (eval-normal-use X2 _) (eval-normal-neu X3 _) (eval-normal-exp X4 _).
-
+=>*/whnf : R =>* A'
+            <- R => A
+            <- whnf A A'.
 
 %abbrev ⋄ = [U] [X] let X ([x] ↓ (U @ ` x)). %infix left 0 ⋄.
 
-%solve - : eval-val (pair (↑ ax) (fst ⋄ ↑ pair (↑ ax) (↑ ax))) E.
 %solve - : (↑ pair (↑ ax) (snd ⋄ ↑ pair (↑ ax) (↑ ax))) <=* ↑ prod (↑ unit) ([x] ↑ unit).
 %solve - : (fst ⋄ ↑ pair (↑ ax) (↑ ax)) <=* ↑ unit.
 %solve - : (let (↑ ax) [x] ↓ ` x) <=* ↑ unit.
-
 %solve - : (↑ lam [x] ↓ ` x) <=* ↑ fun (↑ unit) (↑ unit).
 %solve - : (ap (↑ ax) ⋄ ↑ lam [x] ↓ ` x) <=* ↑ unit.
