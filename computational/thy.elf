@@ -1,0 +1,234 @@
+tp : type.
+val : type.
+use : type.
+neu : type.
+exp : type.
+hyp : type.
+
+` : hyp -> neu. %prefix 11 `.
+@ : use -> neu -> neu. %infix right 10 @.
+↓ : neu -> exp. %prefix 10 ↓.
+↑ : val -> exp. %prefix 10 ↑.
+
+unit : tp.
+prod : tp -> tp -> tp.
+
+ax : val.
+pair : exp -> exp -> val.
+
+fst : use.
+snd : use.
+
+let : exp -> (hyp -> exp) -> exp.
+
+happ : use -> val -> exp -> type.
+%mode happ +U +M -E.
+
+uses : use -> tp -> tp -> type.
+%mode uses +U +A -B.
+
+=>₀ : hyp -> tp -> type. %infix left 9 =>₀.
+%mode =>₀ +H -A.
+
+=> : neu -> tp -> type. %infix left 9 =>.
+%mode => +R -A.
+
+<=₀ : val -> tp -> type. %infix left 8 <=₀.
+%mode <=₀ +M +A.
+
+<= : exp -> tp -> type. %infix left 8 <=.
+%mode <= +E +A.
+
+<=* : exp -> tp -> type. %infix left 8 <=*.
+%mode <=* +E +A.
+
+=>* : neu -> tp -> type. %infix left 8 =>*.
+%mode =>* +R -A.
+
+=>/@ : (U @ R) => A'
+        <- R =>* A
+        <- uses U A A'.
+=>/hyp : ` H => A
+          <- H =>₀ A.
+
+<=/↑ : ↑ M <= A
+          <- M <=₀ A.
+<=/↓ : ↓ R <= A
+        <- R => A.
+
+chk/ax : ax <=₀ unit.
+chk/pair : pair M N <=₀ prod A B
+            <- M <=* A
+            <- N <=* B.
+
+uses/fst : uses fst (prod A B) A.
+uses/snd : uses snd (prod A B) B.
+happ/fst : happ fst (pair M N) M.
+happ/snd : happ fst (pair M N) N.
+
+%%% A PREDICATE FOR NORMAL FORMS (basically, absence of let bindings)
+normal-exp : exp -> type.
+%mode normal-exp +E.
+
+normal-val : val -> type.
+%mode normal-val +M.
+
+normal-use : use -> type.
+%mode normal-use +U.
+
+normal-neu : neu -> type.
+%mode normal-neu +R.
+
+normal/ax : normal-val ax.
+normal/pair : normal-val (pair M N)
+               <- normal-exp M
+               <- normal-exp N.
+
+normal/fst : normal-use fst.
+normal/snd : normal-use snd.
+
+normal/` : normal-neu (` H).
+normal/@ : normal-neu (U @ R)
+            <- normal-neu R
+            <- normal-use U.
+
+normal/↓ : normal-exp (↓ R)
+            <- normal-neu R.
+normal/↑ : normal-exp (↑ M)
+            <- normal-val M.
+
+%%% HEREDITARY SUBSTITUTIONS 
+hsubst-val : exp -> (hyp -> val) -> val -> type.
+%mode hsubst-val +E +M -N.
+
+hsubst-use : exp -> (hyp -> use) -> use -> type.
+%mode hsubst-use +E +U -V.
+
+hsubst-neu : exp -> (hyp -> neu) -> neu -> type.
+%mode hsubst-neu +E +R -S.
+
+hsubst-neu-exp : exp -> (hyp -> neu) -> exp -> type.
+%mode hsubst-neu-exp +E +R -E'.
+
+hsubst-exp : exp -> (hyp -> exp) -> exp -> type.
+%mode hsubst-exp +E +F -E'.
+
+hsubst/pair : hsubst-val E0 ([x] pair (M x) (N x)) (pair M' N')
+               <- hsubst-exp E0 M M'
+               <- hsubst-exp E0 N N'.
+hsubst/ax : hsubst-val E0 ([x] ax) ax.
+
+hsubst/fst : hsubst-use E0 ([x] fst) fst.
+hsubst/snd : hsubst-use E0 ([x] snd) snd.
+
+hsubst/closed : hsubst-neu E0 ([x] R) R.
+hsubst/@ : hsubst-neu E0 ([x] (U x) @ (R x)) (U' @ R')
+            <- hsubst-neu E0 R R'
+            <- hsubst-use E0 U U'.
+
+hsubst/` : hsubst-neu-exp E0 ([x] ` x) E0.
+hsubst/⋄ : hsubst-neu-exp E0 ([x] (U x) @ (R x)) U⋄R
+            <- hsubst-neu-exp E0 R (↑ M)
+            <- hsubst-use E0 U U'
+            <- happ U' M U⋄R.
+
+hsubst/↑ : hsubst-exp E0 ([x] ↑ (M x)) (↑ N)
+            <- hsubst-val E0 M N.
+hsubst/↓/neu : hsubst-exp E0 ([x] ↓ (R x)) (↓ S)
+                <- hsubst-neu E0 R S.
+hsubst/↓/exp : hsubst-exp E0 ([x] ↓ (R x)) E
+                <- hsubst-neu-exp E0 R E.
+hsubst/let : hsubst-exp E0 ([x] let (E x) ([y] F x y)) (let E' F')
+              <- hsubst-exp E0 E E'
+              <- {y} hsubst-exp E0 ([x] F x y) (F' y).
+
+%%% We evalorate expressions to normal forms by replacing let bindings
+%%% by (hereditary) substitutions.
+eval-val : val -> val -> type.
+%mode eval-val +M -N.
+
+eval-use : use -> use -> type.
+%mode eval-use +U -V.
+
+eval-neu : neu -> neu -> type.
+%mode eval-neu +R -S.
+
+eval-exp : exp -> exp -> type.
+%mode eval-exp +E1 -E2.
+
+
+eval/ax : eval-val ax ax.
+eval/pair : eval-val (pair M N) (pair M' N')
+             <- eval-exp M M'
+             <- eval-exp N N'.
+
+eval/fst : eval-use fst fst.
+eval/snd : eval-use snd snd.
+
+eval/` : eval-neu (` H) (` H).
+eval/@ : eval-neu (U @ R) (U' @ R')
+          <- eval-neu R R'
+          <- eval-use U U'.
+
+eval/↓ : eval-exp (↓ R) (↓ S)
+          <- eval-neu R S.
+eval/↑ : eval-exp (↑ M) (↑ N)
+          <- eval-val M N.
+eval/let : eval-exp (let E F) X'
+            <- hsubst-exp E F X
+            <- eval-exp X X'.
+
+%%% These are the primary typing checking & type synthesis
+%%% judgements. The meaning of <=* is very similar to the meaning of ∈
+%%% in extensional type theory: whereas in ETT, we evaluate M to a
+%%% canonical form and then check if it is a verification of A, in ITT
+%%% we evaluate M to a normal form and see if it is a verification of
+%%% A.
+
+<=*/eval : E <=* A
+            <- eval-exp E E'
+            <- E' <= A.
+=>*/eval : R =>* A
+            <- eval-neu R S
+            <- S => A.
+
+%%% METATHROEM: the evaluation of an expression is always a normal form.
+eval-normal-val : eval-val M N -> normal-val N -> type.
+%mode eval-normal-val +X -Y.
+
+eval-normal-use : eval-use U V -> normal-use V -> type.
+%mode eval-normal-use +X -Y.
+
+eval-normal-neu : eval-neu R S -> normal-neu S -> type.
+%mode eval-normal-neu +X -Y.
+
+eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
+%mode eval-normal-exp +X -Y.
+
+- : eval-normal-val eval/ax normal/ax.
+- : eval-normal-val (eval/pair X Y) (normal/pair X' Y')
+     <- eval-normal-exp X X'
+     <- eval-normal-exp Y Y'.
+
+- : eval-normal-use eval/fst normal/fst.
+- : eval-normal-use eval/snd normal/snd.
+
+- : eval-normal-neu eval/` normal/`.
+- : eval-normal-neu (eval/@ X Y) (normal/@ X' Y')
+     <- eval-normal-use X X'
+     <- eval-normal-neu Y Y'.
+
+- : eval-normal-exp (eval/↓ X) (normal/↓ X')
+     <- eval-normal-neu X X'.
+- : eval-normal-exp (eval/↑ X) (normal/↑ X')
+     <- eval-normal-val X X'.
+
+- : eval-normal-exp (eval/let X Y) X'
+     <- eval-normal-exp X X'.
+
+%worlds () (eval-normal-val _ _) (eval-normal-use _ _) (eval-normal-neu _ _) (eval-normal-exp _ _).
+%total (X1 X2 X3 X4) (eval-normal-val X1 _) (eval-normal-use X2 _) (eval-normal-neu X3 _) (eval-normal-exp X4 _).
+
+%solve - : eval-val (pair (↑ ax) (let (↑ pair (↑ ax) (↑ ax)) [x] ↓ (fst @ ` x))) E.
+
+%solve - : (↑ pair (↑ ax) (let (↑ pair (↑ ax) (↑ ax)) [x] ↓ (fst @ ` x))) <=* prod unit unit.
