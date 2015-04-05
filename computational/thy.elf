@@ -28,6 +28,13 @@ let : exp -> (hyp -> exp) -> exp.
 happ : use -> val -> exp -> type.
 %mode happ +U +M -E.
 
+happ* : use -> exp -> exp -> type.
+%mode happ* +U +E -E'.
+
+happ*/↑ : happ* U (↑ M) U⋄M
+           <- happ U M U⋄M.
+happ*/↓ : happ* U (↓ R) (↓ (U @ R)).
+
 uses : use -> val -> (hyp -> exp) -> type.
 %mode uses +U +A -B.
 
@@ -162,9 +169,9 @@ hsubst/@ : hsubst-neu E0 ([x] (U x) @ (R x)) (U' @ R')
 
 hsubst/` : hsubst-neu-exp E0 ([x] ` x) E0.
 hsubst/⋄ : hsubst-neu-exp E0 ([x] (U x) @ (R x)) U⋄R
-            <- hsubst-neu-exp E0 R (↑ M)
+            <- hsubst-neu-exp E0 R E
             <- hsubst-use E0 U U'
-            <- happ U' M U⋄R.
+            <- happ* U' E U⋄R.
 
 hsubst/↑ : hsubst-exp E0 ([x] ↑ (M x)) (↑ N)
             <- hsubst-val E0 M N.
@@ -318,3 +325,10 @@ eval-normal-exp : eval-exp E E' -> normal-exp E' -> type.
 
 %solve - : (↑ lam [x] ↓ ` x) <=* ↑ fun (↑ unit) (↑ unit).
 %solve - : (ap (↑ ax) ⋄ ↑ lam [x] ↓ ` x) <=* ↑ unit.
+%abbrev ID = lam [x] ↓ ` x.
+
+%solve - : ↑ ID <=* ↑ fun (↑ unit) (↑ unit).
+
+%solve - : eval-val ID E.
+% %solve - : eval-val (lam [x] ↑ lam [y] ap (↓ ` y) ⋄ ↓ ` x) E.
+%solve - : eval-val (lam [x] ↑ lam [y] ap (↓ ` y) ⋄ ↓ ` x) E.
